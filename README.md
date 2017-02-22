@@ -114,7 +114,7 @@
 - Maven. Поиск и разрешение конфликтов зависимостей
 - Логирование
 - Выбор lightweight JDBC helper library. <a href="http://jdbi.org/">JDBI</a>
-- Tomcat Class Loader. Memory Leeks
+- Tomcat Class Loader. Memory Leaks
 
 ## Занятие 5
 - Разбор ДЗ (реализуем модули persist, export и web)
