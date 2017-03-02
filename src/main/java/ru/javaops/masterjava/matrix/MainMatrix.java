@@ -9,8 +9,8 @@ import java.util.concurrent.Executors;
  * 03.07.2016
  */
 public class MainMatrix {
-    private static final int MATRIX_SIZE = 1500;
-    private static final int THREAD_NUMBER = 10;
+    private static final int MATRIX_SIZE = 1000;
+    static final int THREAD_NUMBER = 10;
 
     private final static ExecutorService executor = Executors.newFixedThreadPool(MainMatrix.THREAD_NUMBER);
 
@@ -20,7 +20,7 @@ public class MainMatrix {
 
         double singleThreadSum = 0.;
         double concurrentThreadSum = 0.;
-        int count = 5;
+        int count = 1;
         while (count < 6) {
             System.out.println("Pass " + count);
             long start = System.currentTimeMillis();
