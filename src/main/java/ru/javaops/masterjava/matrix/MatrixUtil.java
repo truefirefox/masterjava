@@ -1,7 +1,6 @@
 package ru.javaops.masterjava.matrix;
 
 import java.util.Random;
-import java.util.Stack;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -12,11 +11,10 @@ import java.util.concurrent.ExecutorService;
  */
 public class MatrixUtil {
 
-    // TODO implement parallel multiplication matrixA*matrixB
     public static int[][] concurrentMultiply(int[][] matrixA, int[][] matrixB, ExecutorService executor) throws InterruptedException, ExecutionException {
         final int matrixSize = matrixA.length;
         final int[][] matrixC = new int[matrixSize][matrixSize];
-        final Stack<Integer> rowNumber = new Stack<>();
+        //final Stack<Integer> rowNumber = new Stack<>();
         final CountDownLatch latch = new CountDownLatch(matrixSize);
 
         // what to do with results if use executor.invokeAll?
@@ -48,10 +46,9 @@ public class MatrixUtil {
 
 
         for (int i = 0; i < matrixSize; i++) {
-            rowNumber.push(i);
+            final int row = i;
             executor.submit(() -> {
                 int[] columnB = new int[matrixSize];
-                int row = rowNumber.pop();
 
                 for (int j = 0; j < matrixSize; j++) {
                     columnB[j] = matrixB[j][row];
