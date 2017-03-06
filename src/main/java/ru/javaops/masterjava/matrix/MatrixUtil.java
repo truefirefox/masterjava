@@ -14,54 +14,19 @@ public class MatrixUtil {
     public static int[][] concurrentMultiply(int[][] matrixA, int[][] matrixB, ExecutorService executor) throws InterruptedException, ExecutionException {
         final int matrixSize = matrixA.length;
         final int[][] matrixC = new int[matrixSize][matrixSize];
-        //final Stack<Integer> rowNumber = new Stack<>();
         final CountDownLatch latch = new CountDownLatch(matrixSize);
 
-        // what to do with results if use executor.invokeAll?
-/*        final List<Callable<Integer>> tasks = new ArrayList<>();
-
         for (int i = 0; i < matrixSize; i++) {
-            rowNumber.push(i);
-            tasks.add(() -> {
-                int[] columnB = new int[matrixSize];
-                int row = rowNumber.pop();
+            final int[] columnC = matrixC[i];
+            final int[] columnA = matrixA[i];
 
-                for (int j = 0; j < matrixSize; j++) {
-                    columnB[j] = matrixB[j][row];
-                }
-
-                for (int j = 0; j < matrixSize; j++) {
-                    int sum = 0;
-                    int[] rowA = matrixA[j];
-
-                    for (int k = 0; k < matrixSize; k++) {
-                        sum += rowA[k] * columnB[k];
-                    }
-                    matrixC[j][row] = sum;
-                }
-                return 0;
-            });
-        }
-        executor.invokeAll(tasks);*/
-
-
-        for (int i = 0; i < matrixSize; i++) {
-            final int row = i;
             executor.submit(() -> {
-                int[] columnB = new int[matrixSize];
-
                 for (int j = 0; j < matrixSize; j++) {
-                    columnB[j] = matrixB[j][row];
-                }
-
-                for (int j = 0; j < matrixSize; j++) {
-                    int sum = 0;
-                    int[] rowA = matrixA[j];
-
+                    final int a = columnA[j];
+                    final int[] rowB = matrixB[j];
                     for (int k = 0; k < matrixSize; k++) {
-                        sum += rowA[k] * columnB[k];
+                        columnC[k] += a * rowB[k];
                     }
-                    matrixC[j][row] = sum;
                 }
                 latch.countDown();
             });
@@ -88,12 +53,13 @@ public class MatrixUtil {
                     int[] rowA = matrixA[j];
 
                     for (int k = 0; k < matrixSize; k++) {
-                        sum += rowA[k]*columnB[k];
+                        sum += rowA[k] * columnB[k];
                     }
                     matrixC[j][i] = sum;
                 }
             }
-        } catch (IndexOutOfBoundsException e) {}
+        } catch (IndexOutOfBoundsException e) {
+        }
 
         return matrixC;
     }
