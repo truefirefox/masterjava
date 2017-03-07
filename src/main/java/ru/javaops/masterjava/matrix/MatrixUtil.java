@@ -17,15 +17,18 @@ public class MatrixUtil {
         final CountDownLatch latch = new CountDownLatch(matrixSize);
 
         for (int i = 0; i < matrixSize; i++) {
-            final int[] columnC = matrixC[i];
-            final int[] columnA = matrixA[i];
+            final int[] rowC = matrixC[i];
+            for (int n = 0; n < matrixSize; n++) {
+                rowC[n] = 0;
+            }
+            final int[] rowA = matrixA[i];
 
             executor.submit(() -> {
                 for (int j = 0; j < matrixSize; j++) {
-                    final int a = columnA[j];
+                    final int a = rowA[j];
                     final int[] rowB = matrixB[j];
                     for (int k = 0; k < matrixSize; k++) {
-                        columnC[k] += a * rowB[k];
+                        rowC[k] += a * rowB[k];
                     }
                 }
                 latch.countDown();
@@ -40,7 +43,6 @@ public class MatrixUtil {
         final int matrixSize = matrixA.length;
         final int[][] matrixC = new int[matrixSize][matrixSize];
         final int[] columnB = new int[matrixSize];
-
         try {
             for (int i = 0; ; i++) {
 
