@@ -18,9 +18,6 @@ public class MatrixUtil {
 
         for (int i = 0; i < matrixSize; i++) {
             final int[] rowC = matrixC[i];
-            for (int n = 0; n < matrixSize; n++) {
-                rowC[n] = 0;
-            }
             final int[] rowA = matrixA[i];
 
             executor.submit(() -> {
