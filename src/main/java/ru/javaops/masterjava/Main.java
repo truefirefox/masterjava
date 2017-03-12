@@ -5,16 +5,14 @@ import ru.javaops.masterjava.xml.schema.Group;
 import ru.javaops.masterjava.xml.schema.ObjectFactory;
 import ru.javaops.masterjava.xml.schema.Payload;
 import ru.javaops.masterjava.xml.schema.User;
+import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
 
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
-import javax.xml.namespace.QName;
-import javax.xml.stream.XMLEventReader;
-import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.events.StartElement;
+import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.events.XMLEvent;
 import javax.xml.validation.SchemaFactory;
 import java.io.File;
@@ -117,42 +115,33 @@ public class Main {
         Map<String, List<String>> users = new HashMap<>();
         List<String> groups = new ArrayList<>();
 
-        XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
         try {
-            XMLEventReader xmlEventReader = xmlInputFactory.createXMLEventReader(new FileInputStream(fileXML));
-            while(xmlEventReader.hasNext()) {
-                XMLEvent xmlEvent = xmlEventReader.nextEvent();
-                if (xmlEvent.isStartElement()) {
-                    StartElement startElement = xmlEvent.asStartElement();
+
+            StaxStreamProcessor processor = new StaxStreamProcessor(new FileInputStream(fileXML));
+            XMLStreamReader reader = processor.getReader();
+
+            while(reader.hasNext()) {
+                int xmlEvent = reader.next();
+                if (xmlEvent == XMLEvent.START_ELEMENT) {
 
                     //put pair <user.fullName, groups> in users
-                    if (startElement.getName().getLocalPart().equals("User")) {
-                        String[] groupsArr = startElement.getAttributeByName(QName.valueOf("groups")).getValue().split(" ");
-                        do {
-                            xmlEvent = xmlEventReader.nextEvent();
-                        } while (!xmlEvent.isStartElement());
-                        startElement = xmlEvent.asStartElement();
-                        if (startElement.getName().getLocalPart().equals("fullName")) {
-                            String fullName = xmlEventReader.getElementText();
-                            users.put(fullName, Arrays.asList(groupsArr));
-                        }
+                    if (reader.getName().getLocalPart().equals("User")) {
+                        // add groups from attr
+                        String[] groupsArr = reader.getAttributeValue(null, "groups").split(" ");
+                        // add name
+                        processor.doUntil(XMLEvent.START_ELEMENT, "fullName");
+                        users.put(reader.getElementText(), Arrays.asList(groupsArr));
                     }
 
                     //put list of group to groups
-                    if (startElement.getName().getLocalPart().equals("Project") ) {
-                        do {
-                            xmlEvent = xmlEventReader.nextEvent();
-                        } while (!xmlEvent.isStartElement());
-                        startElement = xmlEvent.asStartElement();
-                        if (startElement.getName().getLocalPart().equals("projectName")
-                                && xmlEventReader.getElementText().equals(project)) {
-                            while (true) {
-                                xmlEvent = xmlEventReader.nextEvent();
-                                if (xmlEvent.isEndElement() && xmlEvent.asEndElement().getName().getLocalPart().equals("Project"))
-                                    break;
-                                if (xmlEvent.isStartElement() && xmlEvent.asStartElement().getName().getLocalPart().equals("Group"))
-                                    groups.add(xmlEvent.asStartElement().getAttributeByName(QName.valueOf("id")).getValue());
-                            }
+                    if (reader.getName().getLocalPart().equals("Project") ) {
+                        processor.doUntil(XMLEvent.START_ELEMENT, "projectName");
+                        if (reader.getElementText().equals(project)) {
+                            do {
+                                xmlEvent = reader.next();
+                                if (xmlEvent == XMLEvent.START_ELEMENT && reader.getName().getLocalPart().equals("Group"))
+                                    groups.add(reader.getAttributeValue(null, "id"));
+                            } while (!(xmlEvent == XMLEvent.END_ELEMENT && reader.getName().getLocalPart().equals("Project")));
                         }
                     }
 
