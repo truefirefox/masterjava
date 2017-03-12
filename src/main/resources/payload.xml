@@ -8,7 +8,7 @@
         <User flag="superuser" city="spb" email="admin@javaops.ru" groups="t07 t08 m01">
             <fullName>Admin</fullName>
         </User>
-        <User flag="deleted" city="spb" email="mail@yandex.ru" groups="t06">
+        <User flag="deleted" city="spb" email="mail@yandex.ru" groups="m01">
             <fullName>Deleted</fullName>
         </User>
     </Users>
