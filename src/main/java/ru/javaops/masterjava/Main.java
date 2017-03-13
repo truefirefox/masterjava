@@ -1,23 +1,22 @@
 package ru.javaops.masterjava;
 
-import org.xml.sax.SAXException;
+import com.google.common.io.Resources;
 import ru.javaops.masterjava.xml.schema.Group;
 import ru.javaops.masterjava.xml.schema.ObjectFactory;
 import ru.javaops.masterjava.xml.schema.Payload;
 import ru.javaops.masterjava.xml.schema.User;
+import ru.javaops.masterjava.xml.util.JaxbParser;
+import ru.javaops.masterjava.xml.util.Schemas;
 import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
+import ru.javaops.masterjava.xml.util.XsltProcessor;
 
-import javax.xml.XMLConstants;
-import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.events.XMLEvent;
-import javax.xml.validation.SchemaFactory;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -28,70 +27,41 @@ import java.util.*;
  * @link https://github.com/JavaOPs/topjava
  */
 public class Main {
-    private static File fileXML = new File("src\\main\\resources\\payload.xml");
-    private static File fileXSD = new File("src\\main\\resources\\payload.xsd");
 
-    public static void main(String[] args) {
-        String project = args[0];
+    public static void main(String[] args) throws Exception {
+        String project = args.length > 0 ? args[0] : null;
         if (project != null) {
-            jaxbMethod(project);
-            staxMethod(project);
+            Set<User> usersJaxb = jaxbMethod(project);
+            System.out.println(project + ":");
+            usersJaxb.forEach(user -> System.out.println("\t" + user.getFullName()));
+
+            Set<String> usersStax = staxMethod(project);
+            System.out.println(project + ":");
+            usersStax.forEach(s -> System.out.println("\t" + s));
+
+            transformToHtml(project);
         }
+
     }
 
-    private static void jaxbMethod(String project) {
-        Set<User> users = new TreeSet<>(Comparator.comparing(User::getFullName));
-        List<Group> groups = new ArrayList<>();
+    private static Set<User> jaxbMethod(String project) {
 
         Payload payload = null;
-        try {
-            JAXBContext jaxbContext = JAXBContext.newInstance(ObjectFactory.class);
-            Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
-            jaxbUnmarshaller.setSchema(SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI).newSchema(fileXSD));
-            payload = (Payload) jaxbUnmarshaller.unmarshal(fileXML);
-        } catch (JAXBException | SAXException e) {
-            e.printStackTrace();
-        }
-
-        if (payload != null) {
-            //get all groups from required project
-            payload.getProjects().getProject().stream().
-                    filter(p -> p.getProjectName().equals(project)).
-                    forEach(p -> groups.addAll(p.getGroups().getGroup()));
-
-            //get users for required project
-            payload.getUsers().getUser().
-                    forEach(u -> u.getGroups()
-                            .forEach(ug -> {
-                                if (groups.contains(ug))
-                                    users.add(u);
-                            })
-                    );
-        }
-        System.out.println(project + ":");
-        users.forEach(user -> System.out.println("\t" + user.getFullName()));
-    }
-
-    // this method doesn't work properly with guava through *.jar
-
-   /* private static void jaxbMethod(String project) {
-        Set<User> users = new TreeSet<>(Comparator.comparing(User::getFullName));
-        List<Group> groups = new ArrayList<>();
-        Payload payload = null;
-
         JaxbParser jaxbParser = new JaxbParser(ObjectFactory.class);
         jaxbParser.setSchema(Schemas.ofClasspath("payload.xsd"));
 
         try {
-             payload = jaxbParser.unmarshal(
+            payload = jaxbParser.unmarshal(
                     Resources.getResource("payload.xml").openStream());
 
         } catch (JAXBException | IOException e) {
             e.printStackTrace();
         }
 
+        Set<User> users = new TreeSet<>(Comparator.comparing(User::getFullName));
         if (payload != null) {
             //get all groups from required project
+            List<Group> groups = new ArrayList<>();
             payload.getProjects().getProject().stream().
                     filter(p -> p.getProjectName().equals(project)).
                     forEach(p -> groups.addAll(p.getGroups().getGroup()));
@@ -105,62 +75,67 @@ public class Main {
                             })
                     );
         }
-        System.out.println(project + ":");
-        users.forEach(user -> System.out.println("\t" + user.getFullName()));
-    }*/
+        return users;
+    }
 
+    private static Set<String> staxMethod(String project) {
 
-    private static void staxMethod(String project) {
-
-        Map<String, List<String>> users = new HashMap<>();
+        Set<String> users = new TreeSet<>();
         List<String> groups = new ArrayList<>();
 
-        try {
+        try (StaxStreamProcessor processor =
+                     new StaxStreamProcessor(Resources.getResource("payload.xml").openStream())){
 
-            StaxStreamProcessor processor = new StaxStreamProcessor(new FileInputStream(fileXML));
             XMLStreamReader reader = processor.getReader();
-
-            while(reader.hasNext()) {
+            while (reader.hasNext()) {
                 int xmlEvent = reader.next();
                 if (xmlEvent == XMLEvent.START_ELEMENT) {
 
-                    //put pair <user.fullName, groups> in users
-                    if (reader.getName().getLocalPart().equals("User")) {
-                        // add groups from attr
-                        String[] groupsArr = reader.getAttributeValue(null, "groups").split(" ");
-                        // add name
-                        processor.doUntil(XMLEvent.START_ELEMENT, "fullName");
-                        users.put(reader.getElementText(), Arrays.asList(groupsArr));
-                    }
-
                     //put list of group to groups
-                    if (reader.getName().getLocalPart().equals("Project") ) {
+                    if (staxEquals(reader, "Project")) {
                         processor.doUntil(XMLEvent.START_ELEMENT, "projectName");
                         if (reader.getElementText().equals(project)) {
                             do {
                                 xmlEvent = reader.next();
-                                if (xmlEvent == XMLEvent.START_ELEMENT && reader.getName().getLocalPart().equals("Group"))
+                                if (xmlEvent == XMLEvent.START_ELEMENT && staxEquals(reader, "Group"))
                                     groups.add(reader.getAttributeValue(null, "id"));
-                            } while (!(xmlEvent == XMLEvent.END_ELEMENT && reader.getName().getLocalPart().equals("Project")));
+                            }
+                            while (!(xmlEvent == XMLEvent.END_ELEMENT && staxEquals(reader,"Project")));
                         }
                     }
 
+                    //put pair <user.fullName, groups> in users
+                    if (staxEquals(reader, "User")) {
+                        // add groups from attr
+                        String[] groupsArr = reader.getAttributeValue(null, "groups").split(" ");
+                        // add name
+                        processor.doUntil(XMLEvent.START_ELEMENT, "fullName");
+                        String name = reader.getElementText();
+                        for (String group: groupsArr) {
+                            if (groups.contains(group))
+                                users.add(name);
+                        }
+                    }
                 }
             }
-        } catch (FileNotFoundException | XMLStreamException e) {
+        } catch (XMLStreamException | IOException e) {
             e.printStackTrace();
         }
+        return users;
+    }
 
-        //find participants for project
-        Set<String> usersToPrint = new TreeSet<>();
-        groups.forEach(g ->
-            users.forEach((String u, List<String> ug) -> {
-                if (users.get(u).contains(g)) {
-                    usersToPrint.add(u);
-                }
-            }));
+    public static void transformToHtml(String project) throws Exception {
+        try (InputStream xslInputStream = Resources.getResource("projects.xsl").openStream();
+             InputStream xmlInputStream = Resources.getResource("payload.xml").openStream()) {
 
-        System.out.println(project + ":");
-        usersToPrint.forEach(user -> System.out.println("\t" + user));
+            XsltProcessor processor = new XsltProcessor(xslInputStream);
+            processor.setParam("ParamName", project);
+            String html = processor.transform(xmlInputStream);
+            Files.write(Paths.get("src\\main\\resources\\projects.html"), html.getBytes());
+        }
+    }
+
+    private static boolean staxEquals(XMLStreamReader reader, String elementName) {
+        return reader.getName().getLocalPart().equals(elementName);
     }
 }

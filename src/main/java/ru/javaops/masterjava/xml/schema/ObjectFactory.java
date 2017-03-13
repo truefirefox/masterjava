@@ -74,11 +74,11 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link Payload.Cities }
+     * Create an instance of {@link Payload.Projects }
      * 
      */
-    public Payload.Cities createPayloadCities() {
-        return new Payload.Cities();
+    public Payload.Projects createPayloadProjects() {
+        return new Payload.Projects();
     }
 
     /**
@@ -90,11 +90,11 @@ public class ObjectFactory {
     }
 
     /**
-     * Create an instance of {@link Payload.Projects }
+     * Create an instance of {@link Payload.Cities }
      * 
      */
-    public Payload.Projects createPayloadProjects() {
-        return new Payload.Projects();
+    public Payload.Cities createPayloadCities() {
+        return new Payload.Cities();
     }
 
     /**
