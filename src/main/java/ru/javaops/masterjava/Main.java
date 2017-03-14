@@ -50,10 +50,8 @@ public class Main {
         JaxbParser jaxbParser = new JaxbParser(ObjectFactory.class);
         jaxbParser.setSchema(Schemas.ofClasspath("payload.xsd"));
 
-        try {
-            payload = jaxbParser.unmarshal(
-                    Resources.getResource("payload.xml").openStream());
-
+        try (InputStream stream = Resources.getResource("payload.xml").openStream()){
+            payload = jaxbParser.unmarshal(stream);
         } catch (JAXBException | IOException e) {
             e.printStackTrace();
         }
