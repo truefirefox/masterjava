@@ -59,19 +59,14 @@ public class Main {
         Set<User> users = new TreeSet<>(Comparator.comparing(User::getFullName));
         if (payload != null) {
             //get all groups from required project
-            List<Group> groups = new ArrayList<>();
-            payload.getProjects().getProject().stream().
+            List<Group> groups = payload.getProjects().getProject().stream().
                     filter(p -> p.getProjectName().equals(project)).
-                    forEach(p -> groups.addAll(p.getGroups().getGroup()));
+                    findAny().orElseThrow(IllegalArgumentException::new).getGroups().getGroup();
 
             //get users for required project
-            payload.getUsers().getUser().
-                    forEach(u -> u.getGroups()
-                            .forEach(ug -> {
-                                if (groups.contains(ug))
-                                    users.add(u);
-                            })
-                    );
+            payload.getUsers().getUser().stream().
+                    filter(u -> !Collections.disjoint(u.getGroups(), groups)).
+                    forEach(users::add);
         }
         return users;
     }
