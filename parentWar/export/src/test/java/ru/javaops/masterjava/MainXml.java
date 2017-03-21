@@ -61,7 +61,7 @@ public class MainXml {
 
     private static Set<User> parseByJaxb(String projectName, URL payloadUrl) throws Exception {
         JaxbParser parser = new JaxbParser(ObjectFactory.class);
-        parser.setSchema(Schemas.ofClasspath("payload.xsd"));
+        parser.setSchema(Schemas.ofClasspath("payloadOld.xsd"));
         Payload payload;
         try (InputStream is = payloadUrl.openStream()) {
             payload = parser.unmarshal(is);

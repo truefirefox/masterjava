@@ -2,7 +2,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <html>
 <head>
-    <title>Title</title>
+    <title>Upload</title>
+    <a href="${pageContext.request.contextPath}/">Upload</a>
     <style>
         table {
             counter-reset: user;
@@ -37,6 +38,8 @@
     </style>
 </head>
 <body>
+
+<div></div>
 <table cellspacing="0" cellpadding="0">
     <thead>
     <tr>

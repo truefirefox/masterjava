@@ -54,6 +54,7 @@ public class FileUploadServlet extends HttpServlet {
             User user = new User();
             user.setEmail(processor.getAttribute("email"));
             user.setFlag(FlagType.fromValue(processor.getAttribute("flag")));
+            processor.doUntil(XMLEvent.START_ELEMENT, "name");
             user.setValue(processor.getText());
             users.add(user);
         }
