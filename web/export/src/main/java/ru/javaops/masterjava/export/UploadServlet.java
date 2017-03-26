@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.List;
 
 import static ru.javaops.masterjava.export.ThymeleafListener.engine;
@@ -28,6 +29,7 @@ public class UploadServlet extends HttpServlet {
         engine.process("export", webContext, resp.getWriter());
     }
 
+
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         final WebContext webContext = new WebContext(req, resp, req.getServletContext(), req.getLocale());
@@ -35,10 +37,12 @@ public class UploadServlet extends HttpServlet {
         try {
 //            http://docs.oracle.com/javaee/6/tutorial/doc/glraq.html
             Part filePart = req.getPart("fileToUpload");
+            int chunk = Integer.parseInt(req.getParameter("chunk"));
             try (InputStream is = filePart.getInputStream()) {
                 List<User> users = userExport.process(is);
-                webContext.setVariable("users", users);
-                engine.process("result", webContext, resp.getWriter());
+                List<User> missingUsers = users.isEmpty() ? Collections.EMPTY_LIST : userExport.addToDB(users, chunk);
+                webContext.setVariable("missingUsers", missingUsers);
+                engine.process("uploadResult", webContext, resp.getWriter());
             }
         } catch (Exception e) {
             webContext.setVariable("exception", e);

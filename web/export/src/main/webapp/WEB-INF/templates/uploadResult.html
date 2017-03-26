@@ -1,0 +1,31 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload result</title>
+</head>
+<body>
+<h4><a href="">Export XML</a></h4>
+<h4><a href="/result">Users</a></h4>
+<h3 th:text = "${missingUsers.isEmpty} ? 'Ok' : 'users, failed to import'"></h3>
+
+<div th:if = "${!missingUsers.isEmpty}">
+    <table border="1" cellpadding="8" cellspacing="0">
+        <thead>
+        <tr>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Flag</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="user : ${missingUsers}">
+            <td th:text="${user.fullName}"></td>
+            <td th:utext="${user.email}"></td>
+            <td th:text="${user.flag}"></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>

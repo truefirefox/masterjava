@@ -1,5 +1,7 @@
 package ru.javaops.masterjava.export;
 
+import ru.javaops.masterjava.persist.DBIProvider;
+import ru.javaops.masterjava.persist.dao.UserDao;
 import ru.javaops.masterjava.persist.model.User;
 import ru.javaops.masterjava.persist.model.UserFlag;
 import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
@@ -29,4 +31,20 @@ public class UserExport {
         }
         return users;
     }
+
+    public List<User> addToDB(List<User> users, int chunk) {
+        UserDao userDao = DBIProvider.getDao(UserDao.class);
+        int[] result = userDao.insertBatch(users, chunk);
+        List<User> missingUsers = new ArrayList<>();
+        if (result.length != users.size()) {
+            missingUsers = new ArrayList<>(users);
+            for (int id: result) {
+                User user = userDao.getWithId(id);
+                missingUsers.removeIf(u -> u.getEmail().equals(user.getEmail()));
+            }
+
+        }
+        return missingUsers;
+    }
+
 }
