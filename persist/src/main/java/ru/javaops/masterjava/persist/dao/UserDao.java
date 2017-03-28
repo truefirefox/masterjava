@@ -31,9 +31,9 @@ public abstract class UserDao implements AbstractDao {
     @Transaction
     @SqlBatch("INSERT " +
             "INTO users (full_name, email, flag) VALUES (:fullName, :email, CAST(:flag AS user_flag)) " +
-            "ON CONFLICT DO NOTHING")
+            "ON CONFLICT DO NOTHING RETURNING :number")
     @GetGeneratedKeys
-    public abstract int[] insertBatch(@BindBean List<User> users, @BatchChunkSize int chunk);
+    public abstract int[] insertBatch(@Bind("number") List<Integer> numbers, @BindBean List<User> users, @BatchChunkSize int chunk);
 
     @SqlUpdate("INSERT INTO users (full_name, email, flag) VALUES (:fullName, :email, CAST(:flag AS user_flag)) ")
     @GetGeneratedKeys

@@ -7,8 +7,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import ru.javaops.masterjava.persist.UserTestData;
 import ru.javaops.masterjava.persist.model.User;
+import ru.javaops.masterjava.persist.model.UserFlag;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static ru.javaops.masterjava.persist.UserTestData.*;
 
@@ -39,8 +42,25 @@ public class UserDaoTest extends AbstractDaoTest<UserDao> {
     }
 
     @Test
+    public void insert() {
+        User user = new User("UserForInsert", "userForInsert@gmail.com", UserFlag.active);
+        dao.insert(user);
+
+    }
+
+    @Test
     public void withBatch() {
-        int[] ids = dao.insertBatch(ImmutableList.of(USER4,USER5,USER6), 2);
-        Assert.assertEquals(ids.length, 3);
+        List<User> users = ImmutableList.of(USER1,USER5,USER6,USER3,USER2);
+        List<Integer> numbers = IntStream.range(0, 3).boxed().collect(Collectors.toList());
+
+        List<Integer> result = IntStream.of(dao.insertBatch(numbers, users,2))
+                .boxed()
+                .collect(Collectors.toList());
+
+        List<User> missingUsers = users.stream()
+                .filter(u -> !result.contains(users.indexOf(u)))
+                .collect(Collectors.toList());
+
+        Assert.assertArrayEquals(missingUsers.toArray(), new User[] {USER1, USER3, USER2});
     }
 }

@@ -1,5 +1,7 @@
 package ru.javaops.masterjava.persist.model;
 
+import com.bertoncelj.jdbi.entitymapper.Column;
+
 /**
  * gkislin
  * 28.10.2016
@@ -12,6 +14,7 @@ abstract public class BaseEntity {
         this.id = id;
     }
 
+    @Column("id")
     protected Integer id;
 
     public Integer getId() {

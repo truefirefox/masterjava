@@ -11,6 +11,8 @@ import javax.xml.stream.events.XMLEvent;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * gkislin
@@ -34,17 +36,19 @@ public class UserExport {
 
     public List<User> addToDB(List<User> users, int chunk) {
         UserDao userDao = DBIProvider.getDao(UserDao.class);
-        int[] result = userDao.insertBatch(users, chunk);
-        List<User> missingUsers = new ArrayList<>();
-        if (result.length != users.size()) {
-            missingUsers = new ArrayList<>(users);
-            for (int id: result) {
-                User user = userDao.getWithId(id);
-                missingUsers.removeIf(u -> u.getEmail().equals(user.getEmail()));
-            }
 
-        }
-        return missingUsers;
+        //list of rowNumbers
+        List<Integer> numbers = IntStream.range(0, users.size()).boxed().collect(Collectors.toList());
+
+        //result of SqlBatch int[] only (-> List<Integer>)
+        List<Integer> result = IntStream.of(userDao.insertBatch(numbers, users, chunk))
+                .boxed()
+                .collect(Collectors.toList());
+
+        //find missing users
+        return users.stream()
+                .filter(u -> !result.contains(users.indexOf(u)))
+                .collect(Collectors.toList());
     }
 
 }
