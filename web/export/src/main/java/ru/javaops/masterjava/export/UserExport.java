@@ -37,18 +37,19 @@ public class UserExport {
     public List<User> addToDB(List<User> users, int chunk) {
         UserDao userDao = DBIProvider.getDao(UserDao.class);
 
-        //list of rowNumbers
-        List<Integer> numbers = IntStream.range(0, users.size()).boxed().collect(Collectors.toList());
-
         //result of SqlBatch int[] only (-> List<Integer>)
-        List<Integer> result = IntStream.of(userDao.insertBatch(numbers, users, chunk))
+        List<Integer> result = IntStream.of(userDao.insertBatch(users, chunk))
                 .boxed()
                 .collect(Collectors.toList());
 
         //find missing users
-        return users.stream()
-                .filter(u -> !result.contains(users.indexOf(u)))
-                .collect(Collectors.toList());
+        List<User> missingUsers = new ArrayList<>();
+        for (int i = 0; i < users.size(); i++) {
+            if (result.get(i) == 0) {
+                missingUsers.add(users.get(i));
+            }
+        }
+        return missingUsers;
     }
 
 }

@@ -9,6 +9,7 @@ import ru.javaops.masterjava.persist.UserTestData;
 import ru.javaops.masterjava.persist.model.User;
 import ru.javaops.masterjava.persist.model.UserFlag;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -51,16 +52,19 @@ public class UserDaoTest extends AbstractDaoTest<UserDao> {
     @Test
     public void withBatch() {
         List<User> users = ImmutableList.of(USER1,USER5,USER6,USER3,USER2);
-        List<Integer> numbers = IntStream.range(0, 3).boxed().collect(Collectors.toList());
-
-        List<Integer> result = IntStream.of(dao.insertBatch(numbers, users,2))
+        List<Integer> result = IntStream.of(
+                dao.insertBatch(users,2))
                 .boxed()
                 .collect(Collectors.toList());
 
-        List<User> missingUsers = users.stream()
-                .filter(u -> !result.contains(users.indexOf(u)))
-                .collect(Collectors.toList());
+        //result.forEach(System.out::println);
 
+        List<User> missingUsers = new ArrayList<>();
+        for (int i = 0; i < users.size(); i++) {
+            if (result.get(i) == 0) {
+                missingUsers.add(users.get(i));
+            }
+        }
         Assert.assertArrayEquals(missingUsers.toArray(), new User[] {USER1, USER3, USER2});
     }
 }
