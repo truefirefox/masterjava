@@ -13,13 +13,6 @@ public class ProjectDaoTest extends AbstractDaoTest<ProjectDao>{
     }
 
     @Test
-    public void insertGeneratedId() throws Exception {
-        Project project = new Project(100200, "Topjava", "topjava");
-        int result = dao.insertGeneratedId(project);
-        System.out.println(result);
-    }
-
-    @Test
     public void insertWitId() throws Exception {
         Project project = new Project(100201, "Topjava", "topjava");
         System.out.println(dao.insertWitId(project));

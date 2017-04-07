@@ -1,21 +1,18 @@
 package ru.javaops.masterjava.export;
 
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import one.util.streamex.StreamEx;
+import one.util.streamex.IntStreamEx;
 import ru.javaops.masterjava.persist.DBIProvider;
+import ru.javaops.masterjava.persist.dao.GroupDao;
 import ru.javaops.masterjava.persist.dao.UserDao;
 import ru.javaops.masterjava.persist.model.User;
 import ru.javaops.masterjava.persist.model.UserFlag;
 import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
 
-import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
@@ -24,82 +21,62 @@ import java.util.concurrent.Future;
  */
 @Slf4j
 public class UserExport {
-
-    private static final int NUMBER_THREADS = 4;
-    private final ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
     private final UserDao userDao = DBIProvider.getDao(UserDao.class);
+    private final GroupDao groupDao = DBIProvider.getDao(GroupDao.class);
 
-    @Value
-    public static class FailedEmail {
-        public String emailOrRange;
-        public String reason;
+    public List<String> process(final ExecutorService executorService,
+                                     final StaxStreamProcessor processor,
+                                     int chunkSize) throws Exception {
 
-        @Override
-        public String toString() {
-            return emailOrRange + " : " + reason;
-        }
-    }
-
-    public List<FailedEmail> process(final StaxStreamProcessor processor, int chunkSize) throws XMLStreamException {
-
-        return new Callable<List<FailedEmail>>() {
-            class ChunkFuture {
-                String emailRange;
-                Future<List<String>> future;
-
-                public ChunkFuture(List<User> chunk, Future<List<String>> future) {
-                    this.future = future;
-                    this.emailRange = chunk.get(0).getEmail();
-                    if (chunk.size() > 1) {
-                        this.emailRange += '-' + chunk.get(chunk.size() - 1).getEmail();
-                    }
-                }
-            }
+        return new Callable<List<String>>() {
 
             @Override
-            public List<FailedEmail> call() throws XMLStreamException {
-                List<ChunkFuture> futures = new ArrayList<>();
+            public List<String> call() throws Exception {
+                List<String> futures = new ArrayList<>();
 
                 int id = userDao.getSeqAndSkip(chunkSize);
-                List<User> chunk = new ArrayList<>(chunkSize);
+                Map<User, List<String>> chunk = new HashMap<>(chunkSize);
 
                 while (processor.doUntil(XMLEvent.START_ELEMENT, "User")) {
                     final String email = processor.getAttribute("email");
                     final String city = processor.getAttribute("city");
+                    String groupRefs = processor.getAttribute("groupRefs");
+                    final String[] groups = groupRefs != null ? groupRefs.split("\\s+") : new String[0];
                     final UserFlag flag = UserFlag.valueOf(processor.getAttribute("flag"));
                     final String fullName = processor.getReader().getElementText();
                     final User user = new User(id++, fullName, email, flag, city);
-                    chunk.add(user);
+                    chunk.put(user, Arrays.asList(groups));
                     if (chunk.size() == chunkSize) {
-                        futures.add(submit(chunk));
-                        chunk = new ArrayList<>(chunkSize);
+                        futures.addAll(submit(chunk));
+                        chunk = new HashMap<>(chunkSize);
                         id = userDao.getSeqAndSkip(chunkSize);
                     }
                 }
 
                 if (!chunk.isEmpty()) {
-                    futures.add(submit(chunk));
+                    futures.addAll(submit(chunk));
                 }
-
-                List<FailedEmail> failed = new ArrayList<>();
-                futures.forEach(cf -> {
-                    try {
-                        failed.addAll(StreamEx.of(cf.future.get()).map(email -> new FailedEmail(email, "already present")).toList());
-                        log.info(cf.emailRange + " successfully executed");
-                    } catch (Exception e) {
-                        log.error(cf.emailRange + " failed", e);
-                        failed.add(new FailedEmail(cf.emailRange, e.toString()));
-                    }
-                });
-                return failed;
+                return futures;
             }
 
-            private ChunkFuture submit(List<User> chunk) {
-                ChunkFuture chunkFuture = new ChunkFuture(chunk,
-                        executorService.submit(() -> userDao.insertAndGetConflictEmails(chunk))
-                );
-                log.info("Submit " + chunkFuture.emailRange);
-                return chunkFuture;
+            private List<String> submit(Map<User, List<String>> chunk) throws Exception {
+                List<String> failed = new ArrayList<>();
+                Future<List<User>> chunkFuture = executorService.submit(
+                        () -> userDao.insertAndGetConflicts(new ArrayList<>(chunk.keySet())));
+                chunkFuture.get().forEach(u -> {
+                    failed.add("User with email = " + u.getEmail() + " already present");
+                    chunk.remove(u);
+                });
+
+                //actually we don't use it because we have "ON DELETE CASCADE ON UPDATE CASCADE" in user_group table
+                chunk.forEach((User u, List<String> l) -> {
+                    int[] result = groupDao.updateGroups(u.getEmail(), l);
+                    IntStreamEx.range(0, l.size())
+                            .filter(i -> result[i] == 0)
+                            .forEach(s -> failed.add("failed to add group " + s + " for User " + u.getEmail()));
+                });
+                log.info("Submit " + chunk.size() + " users");
+                return failed;
             }
         }.call();
     }

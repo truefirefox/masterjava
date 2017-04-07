@@ -19,13 +19,12 @@ import java.util.concurrent.*;
  */
 @Slf4j
 public class ProjectGroupExport {
-    private static final int NUMBER_THREADS = 4;
-    private final ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
     private final GroupDao groupDao = DBIProvider.getDao(GroupDao.class);
     private final ProjectDao projectDao = DBIProvider.getDao(ProjectDao.class);
 
-
-    public List<String> process(final StaxStreamProcessor processor, int chunkSize) throws Exception {
+    public List<String> process(final ExecutorService executorService,
+                                final StaxStreamProcessor processor,
+                                int chunkSize) throws Exception {
 
         return new Callable<List<String>>() {
 

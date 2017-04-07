@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
@@ -19,12 +18,11 @@ import java.util.concurrent.Future;
  */
 @Slf4j
 public class CityExport {
-
-    private static final int NUMBER_THREADS = 4;
-    private final ExecutorService executorService = Executors.newFixedThreadPool(NUMBER_THREADS);
     private final CityDao cityDao = DBIProvider.getDao(CityDao.class);
 
-    public List<String> process(final StaxStreamProcessor processor, int chunkSize) throws Exception {
+    public List<String> process(final ExecutorService executorService,
+                                final StaxStreamProcessor processor,
+                                int chunkSize) throws Exception {
 
         return new Callable<List<String>>() {
 

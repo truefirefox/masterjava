@@ -22,8 +22,6 @@ import static ru.javaops.masterjava.export.ThymeleafListener.engine;
 @Slf4j
 public class UploadServlet extends HttpServlet {
     private static final int CHUNK_SIZE = 2000;
-
-    private final UserExport userExport = new UserExport();
     private final PayloadExport payloadExport = new PayloadExport();
 
     @Override
@@ -43,13 +41,6 @@ public class UploadServlet extends HttpServlet {
             } else {
                 Part filePart = req.getPart("fileToUpload");
                 try (InputStream is = filePart.getInputStream()) {
-                    /*List<UserExport.FailedEmail> failed = userExport.process(is, chunkSize);
-                    log.info("Failed users: " + failed);
-                    final WebContext webContext =
-                            new WebContext(req, resp, req.getServletContext(), req.getLocale(),
-                                    ImmutableMap.of("failed", failed));
-                    engine.process("result", webContext, resp.getWriter());
-                    return;*/
                     List<String> failed = payloadExport.process(is, chunkSize);
                     log.info("Failed uploads: " + failed);
                     final WebContext webContext =

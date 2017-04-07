@@ -8,7 +8,7 @@ import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapperFactory;
 import ru.javaops.masterjava.persist.DBIProvider;
 import ru.javaops.masterjava.persist.model.User;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * gkislin
@@ -20,6 +20,8 @@ import java.util.List;
 @RegisterMapperFactory(EntityMapperFactory.class)
 public abstract class UserDao implements AbstractDao {
 
+    private final GroupDao groupDao = DBIProvider.getDao(GroupDao.class);
+
     public User insert(User user) {
         if (user.isNew()) {
             int id = insertGeneratedId(user);
@@ -28,16 +30,6 @@ public abstract class UserDao implements AbstractDao {
             insertWitId(user);
         }
         return user;
-    }
-
-    @SqlQuery("SELECT nextval('global_seq')")
-    abstract int getNextVal();
-
-    @Transaction
-    public int getSeqAndSkip(int step) {
-        int id = getNextVal();
-        DBIProvider.getDBI().useHandle(h -> h.execute("ALTER SEQUENCE global_seq RESTART WITH " + (id + step)));
-        return id;
     }
 
     @SqlUpdate("INSERT INTO users (full_name, email, flag, city) VALUES (:fullName, :email, CAST(:flag AS USER_FLAG), :city) ")
@@ -59,14 +51,17 @@ public abstract class UserDao implements AbstractDao {
     @SqlBatch("INSERT INTO users (id, full_name, email, flag, city) VALUES (:id, :fullName, :email, CAST(:flag AS USER_FLAG), :city)" +
             "ON CONFLICT DO NOTHING")
 //            "ON CONFLICT (email) DO UPDATE SET full_name=:fullName, flag=CAST(:flag AS USER_FLAG)")
-    public abstract int[] insertBatch(@BindBean List<User> users, @BatchChunkSize int chunkSize);
+    public abstract int[] insertBatch(@BindBean Collection<User> users, @BatchChunkSize int chunkSize);
 
 
-    public List<String> insertAndGetConflictEmails(List<User> users) {
+    public List<User> insertAndGetConflicts(List<User> users) {
         int[] result = insertBatch(users, users.size());
         return IntStreamEx.range(0, users.size())
                 .filter(i -> result[i] == 0)
-                .mapToObj(index -> users.get(index).getEmail())
+                .mapToObj(users::get)
                 .toList();
     }
+
+
+
 }
