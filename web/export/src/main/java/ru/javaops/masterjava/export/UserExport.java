@@ -11,7 +11,6 @@ import ru.javaops.masterjava.xml.util.StaxStreamProcessor;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.XMLEvent;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -41,8 +40,7 @@ public class UserExport {
         }
     }
 
-    public List<FailedEmail> process(final InputStream is, int chunkSize) throws XMLStreamException {
-        log.info("Start proseccing with chunkSize=" + chunkSize);
+    public List<FailedEmail> process(final StaxStreamProcessor processor, int chunkSize) throws XMLStreamException {
 
         return new Callable<List<FailedEmail>>() {
             class ChunkFuture {
@@ -64,13 +62,13 @@ public class UserExport {
 
                 int id = userDao.getSeqAndSkip(chunkSize);
                 List<User> chunk = new ArrayList<>(chunkSize);
-                final StaxStreamProcessor processor = new StaxStreamProcessor(is);
 
                 while (processor.doUntil(XMLEvent.START_ELEMENT, "User")) {
                     final String email = processor.getAttribute("email");
+                    final String city = processor.getAttribute("city");
                     final UserFlag flag = UserFlag.valueOf(processor.getAttribute("flag"));
                     final String fullName = processor.getReader().getElementText();
-                    final User user = new User(id++, fullName, email, flag);
+                    final User user = new User(id++, fullName, email, flag, city);
                     chunk.add(user);
                     if (chunk.size() == chunkSize) {
                         futures.add(submit(chunk));

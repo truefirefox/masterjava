@@ -16,6 +16,7 @@ import java.util.List;
  * <p>
  * <p>
  */
+//TODO update group_user table
 @RegisterMapperFactory(EntityMapperFactory.class)
 public abstract class UserDao implements AbstractDao {
 
@@ -29,21 +30,21 @@ public abstract class UserDao implements AbstractDao {
         return user;
     }
 
-    @SqlQuery("SELECT nextval('user_seq')")
+    @SqlQuery("SELECT nextval('global_seq')")
     abstract int getNextVal();
 
     @Transaction
     public int getSeqAndSkip(int step) {
         int id = getNextVal();
-        DBIProvider.getDBI().useHandle(h -> h.execute("ALTER SEQUENCE user_seq RESTART WITH " + (id + step)));
+        DBIProvider.getDBI().useHandle(h -> h.execute("ALTER SEQUENCE global_seq RESTART WITH " + (id + step)));
         return id;
     }
 
-    @SqlUpdate("INSERT INTO users (full_name, email, flag) VALUES (:fullName, :email, CAST(:flag AS USER_FLAG)) ")
+    @SqlUpdate("INSERT INTO users (full_name, email, flag, city) VALUES (:fullName, :email, CAST(:flag AS USER_FLAG), :city) ")
     @GetGeneratedKeys
     abstract int insertGeneratedId(@BindBean User user);
 
-    @SqlUpdate("INSERT INTO users (id, full_name, email, flag) VALUES (:id, :fullName, :email, CAST(:flag AS USER_FLAG)) ")
+    @SqlUpdate("INSERT INTO users (id, full_name, email, flag, city) VALUES (:id, :fullName, :email, CAST(:flag AS USER_FLAG), :city) ")
     abstract void insertWitId(@BindBean User user);
 
     @SqlQuery("SELECT * FROM users ORDER BY full_name, email LIMIT :it")
@@ -55,7 +56,7 @@ public abstract class UserDao implements AbstractDao {
     public abstract void clean();
 
     //    https://habrahabr.ru/post/264281/
-    @SqlBatch("INSERT INTO users (id, full_name, email, flag) VALUES (:id, :fullName, :email, CAST(:flag AS USER_FLAG))" +
+    @SqlBatch("INSERT INTO users (id, full_name, email, flag, city) VALUES (:id, :fullName, :email, CAST(:flag AS USER_FLAG), :city)" +
             "ON CONFLICT DO NOTHING")
 //            "ON CONFLICT (email) DO UPDATE SET full_name=:fullName, flag=CAST(:flag AS USER_FLAG)")
     public abstract int[] insertBatch(@BindBean List<User> users, @BatchChunkSize int chunkSize);
