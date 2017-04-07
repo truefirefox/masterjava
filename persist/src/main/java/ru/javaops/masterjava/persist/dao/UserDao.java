@@ -5,10 +5,10 @@ import one.util.streamex.IntStreamEx;
 import org.skife.jdbi.v2.sqlobject.*;
 import org.skife.jdbi.v2.sqlobject.customizers.BatchChunkSize;
 import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapperFactory;
-import ru.javaops.masterjava.persist.DBIProvider;
 import ru.javaops.masterjava.persist.model.User;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * gkislin
@@ -16,11 +16,8 @@ import java.util.*;
  * <p>
  * <p>
  */
-//TODO update group_user table
 @RegisterMapperFactory(EntityMapperFactory.class)
 public abstract class UserDao implements AbstractDao {
-
-    private final GroupDao groupDao = DBIProvider.getDao(GroupDao.class);
 
     public User insert(User user) {
         if (user.isNew()) {

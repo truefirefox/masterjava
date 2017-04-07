@@ -1,7 +1,7 @@
 package ru.javaops.masterjava.export;
 
+import com.google.common.base.Splitter;
 import lombok.extern.slf4j.Slf4j;
-import one.util.streamex.IntStreamEx;
 import ru.javaops.masterjava.persist.DBIProvider;
 import ru.javaops.masterjava.persist.dao.GroupDao;
 import ru.javaops.masterjava.persist.dao.UserDao;
@@ -25,8 +25,8 @@ public class UserExport {
     private final GroupDao groupDao = DBIProvider.getDao(GroupDao.class);
 
     public List<String> process(final ExecutorService executorService,
-                                     final StaxStreamProcessor processor,
-                                     int chunkSize) throws Exception {
+                                final StaxStreamProcessor processor,
+                                int chunkSize) throws Exception {
 
         return new Callable<List<String>>() {
 
@@ -41,11 +41,10 @@ public class UserExport {
                     final String email = processor.getAttribute("email");
                     final String city = processor.getAttribute("city");
                     String groupRefs = processor.getAttribute("groupRefs");
-                    final String[] groups = groupRefs != null ? groupRefs.split("\\s+") : new String[0];
                     final UserFlag flag = UserFlag.valueOf(processor.getAttribute("flag"));
-                    final String fullName = processor.getReader().getElementText();
+                    final String fullName = processor.getText();
                     final User user = new User(id++, fullName, email, flag, city);
-                    chunk.put(user, Arrays.asList(groups));
+                    chunk.put(user, Splitter.on(' ').splitToList(groupRefs));
                     if (chunk.size() == chunkSize) {
                         futures.addAll(submit(chunk));
                         chunk = new HashMap<>(chunkSize);
@@ -60,23 +59,23 @@ public class UserExport {
             }
 
             private List<String> submit(Map<User, List<String>> chunk) throws Exception {
-                List<String> failed = new ArrayList<>();
-                Future<List<User>> chunkFuture = executorService.submit(
-                        () -> userDao.insertAndGetConflicts(new ArrayList<>(chunk.keySet())));
-                chunkFuture.get().forEach(u -> {
-                    failed.add("User with email = " + u.getEmail() + " already present");
-                    chunk.remove(u);
-                });
 
-                //actually we don't use it because we have "ON DELETE CASCADE ON UPDATE CASCADE" in user_group table
-                chunk.forEach((User u, List<String> l) -> {
-                    int[] result = groupDao.updateGroups(u.getEmail(), l);
-                    IntStreamEx.range(0, l.size())
-                            .filter(i -> result[i] == 0)
-                            .forEach(s -> failed.add("failed to add group " + s + " for User " + u.getEmail()));
-                });
+                Future<List<String>> chunkFuture = executorService.submit(
+                        () -> {
+                            List<String> failed = new ArrayList<>();
+                            List<User> users = userDao.insertAndGetConflicts(new ArrayList<>(chunk.keySet()));
+                            users.forEach(u -> {
+                                failed.add("User with email = " + u.getEmail() + " already present");
+                                chunk.remove(u);
+                            });
+                            // don't need failed messages for groups because "DELETE ON CASCADE"
+                            chunk.forEach((User u, List<String> groups) -> groupDao.updateGroups(u.getEmail(), groups));
+                            return failed;
+                        });
+
                 log.info("Submit " + chunk.size() + " users");
-                return failed;
+
+                return chunkFuture.get();
             }
         }.call();
     }

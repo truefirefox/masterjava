@@ -40,7 +40,7 @@ public class CityExport {
                     if (tag.equals("Users")) break;
 
                     final String valueId = processor.getAttribute("id");
-                    final String value = processor.getReader().getElementText();
+                    final String value = processor.getText();
 
                     final City city = new City(id++, value, valueId);
                     chunk.add(city);

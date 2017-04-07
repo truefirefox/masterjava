@@ -18,10 +18,6 @@ import java.util.List;
 @RegisterMapperFactory(EntityMapperFactory.class)
 public abstract class GroupDao implements AbstractDao{
 
-    @SqlBatch("INSERT INTO groups (name) VALUES (:name)" +
-            "ON CONFLICT DO NOTHING")
-    public abstract int[] insertBatchByName(@BindBean List<String> groups);
-
     @SqlBatch("INSERT INTO groups (id, name, type, project_id) VALUES (:id, :name, CAST(:type AS group_type), :projectId)" +
             "ON CONFLICT DO NOTHING")
     public abstract int[] insertBatch(@BindBean List<Group> groups, @BatchChunkSize int chunkSize);
@@ -35,14 +31,6 @@ public abstract class GroupDao implements AbstractDao{
         return IntStreamEx.range(0, groups.size())
                 .filter(i -> result[i] == 0)
                 .mapToObj(index -> groups.get(index).getName())
-                .toList();
-    }
-
-    public List<String> insertByNameAndGetFailed(List<String> groups) {
-        int[] result = insertBatchByName(groups);
-        return IntStreamEx.range(0, groups.size())
-                .filter(i -> result[i] == 0)
-                .mapToObj(groups::get)
                 .toList();
     }
 
