@@ -40,7 +40,7 @@ public abstract class UserDao implements AbstractDao {
     public abstract List<User> getWithLimit(@Bind int limit);
 
     //   http://stackoverflow.com/questions/13223820/postgresql-delete-all-content
-    @SqlUpdate("TRUNCATE users")
+    @SqlUpdate("TRUNCATE users CASCADE")
     @Override
     public abstract void clean();
 
@@ -49,6 +49,13 @@ public abstract class UserDao implements AbstractDao {
             "ON CONFLICT DO NOTHING")
 //            "ON CONFLICT (email) DO UPDATE SET full_name=:fullName, flag=CAST(:flag AS USER_FLAG)")
     public abstract int[] insertBatch(@BindBean Collection<User> users, @BatchChunkSize int chunkSize);
+
+
+    @SqlBatch("INSERT INTO users (id, full_name, email, flag, city) " +
+            "SELECT :id, :fullName, :email, CAST(:flag AS USER_FLAG), :city " +
+            "WHERE (SELECT value_id FROM cities WHERE value_id = :city) IS NOT NULL " +
+            "ON CONFLICT DO NOTHING")
+    public abstract int[] insertBatchWithCity(@BindBean Collection<User> users, @BatchChunkSize int chunkSize);
 
 
     public List<User> insertAndGetConflicts(List<User> users) {
