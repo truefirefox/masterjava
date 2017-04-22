@@ -67,12 +67,22 @@
                 <directory>${masterjava.config}</directory>
                 <includes>
                     <include>logback-test.xml</include>
+                    <include>persist.conf</include>
                 </includes>
             </testResource>
             <testResource>
                 <directory>src/test/resources</directory>
             </testResource>
         </testResources>
+        <resources>
+            <resource>
+                <directory>${masterjava.config}wsdl</directory>
+                <includes>
+                    <include>mailService.wsdl</include>
+                </includes>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
     </build>
 
     <dependencies>
