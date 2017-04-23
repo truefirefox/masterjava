@@ -68,8 +68,6 @@
                 <includes>
                     <include>logback-test.xml</include>
                     <include>persist.conf</include>
-                    <include>hosts.conf</include>
-                    <include>mail.conf</include>
                 </includes>
             </testResource>
             <testResource>
