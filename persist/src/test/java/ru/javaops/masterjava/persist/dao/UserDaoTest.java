@@ -7,9 +7,10 @@ import org.junit.Test;
 import ru.javaops.masterjava.persist.UserTestData;
 import ru.javaops.masterjava.persist.model.User;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import static ru.javaops.masterjava.persist.UserTestData.FIST5_USERS;
+import static ru.javaops.masterjava.persist.UserTestData.*;
 
 /**
  * gkislin
@@ -49,5 +50,12 @@ public class UserDaoTest extends AbstractDaoTest<UserDao> {
         int seq1 = dao.getSeqAndSkip(5);
         int seq2 = dao.getSeqAndSkip(1);
         Assert.assertEquals(5, seq2 - seq1);
+    }
+
+    @Test
+    public void getByIds() throws Exception {
+        List<Integer> ids = new ArrayList<>();
+        FIST5_USERS.forEach(u -> ids.add(u.getId()));
+        Assert.assertEquals(dao.getByIds(ids),FIST5_USERS);
     }
 }
