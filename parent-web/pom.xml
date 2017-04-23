@@ -75,6 +75,7 @@
                 <filtering>true</filtering>
                 <includes>
                     <include>logback.xml</include>
+                    <include>main.conf</include>
                 </includes>
             </resource>
             <resource>
