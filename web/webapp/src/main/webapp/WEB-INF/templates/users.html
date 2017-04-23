@@ -4,7 +4,8 @@
     <title>Users</title>
 </head>
 <body>
-<table border="1" cellpadding="8" cellspacing="0">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<table id ="userTable" border="1" cellpadding="8" cellspacing="0">
     <thead>
     <tr>
         <th></th>
@@ -20,8 +21,24 @@
         <td th:text="${user.fullName}"></td>
         <td th:utext="${user.email}"></td>
         <td th:text="${user.flag}"></td>
+        <td><input type="checkbox" name="mailedUser" th:value="${user.id}"></td>
     </tr>
     </tbody>
 </table>
+
+<button onclick="send_eMail()">send eMail</button>
+
+<script>
+    function send_eMail() {
+        var checkboxes = $('#userTable input[type="checkbox"]:checked'),
+            ids = [];
+        for(var i = 0; i < checkboxes.length; i++){
+            ids.push(checkboxes[i].value)
+        }
+        //   alert(ids);
+        $.post("", ids.toString()).done(alert("send emails"));
+    }
+</script>
+
 </body>
 </html>

@@ -5,6 +5,8 @@ import one.util.streamex.IntStreamEx;
 import org.skife.jdbi.v2.sqlobject.*;
 import org.skife.jdbi.v2.sqlobject.customizers.BatchChunkSize;
 import org.skife.jdbi.v2.sqlobject.customizers.RegisterMapperFactory;
+import org.skife.jdbi.v2.sqlobject.stringtemplate.UseStringTemplate3StatementLocator;
+import org.skife.jdbi.v2.unstable.BindIn;
 import ru.javaops.masterjava.persist.DBIProvider;
 import ru.javaops.masterjava.persist.model.User;
 
@@ -16,6 +18,7 @@ import java.util.List;
  * <p>
  * <p>
  */
+@UseStringTemplate3StatementLocator
 @RegisterMapperFactory(EntityMapperFactory.class)
 public abstract class UserDao implements AbstractDao {
 
@@ -60,6 +63,8 @@ public abstract class UserDao implements AbstractDao {
 //            "ON CONFLICT (email) DO UPDATE SET full_name=:fullName, flag=CAST(:flag AS USER_FLAG)")
     public abstract int[] insertBatch(@BindBean List<User> users, @BatchChunkSize int chunkSize);
 
+    @SqlQuery("SELECT * FROM users WHERE id IN (<ids>)")
+    public abstract List<User> getByIds(@BindIn("ids") List<Integer> ids);
 
     public List<User> insertAndGetConflictEmails(List<User> users) {
         int[] result = insertBatch(users, users.size());
