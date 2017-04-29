@@ -2,18 +2,16 @@
 <head>
     <meta charset="UTF-8">
     <title>Users</title>
+    <!--https://code.jquery.com/-->
+    <!--http://stackoverflow.com/a/24070373/548473-->
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"
+            integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+            crossorigin="anonymous" async>
+    </script>
 </head>
-<!--https://code.jquery.com/-->
-<!--http://stackoverflow.com/a/24070373/548473-->
-<script src="https://code.jquery.com/jquery-3.1.1.min.js"
-        integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
-        crossorigin="anonymous" async>
-</script>
-<body>
-<html>
 <body>
 <section>
-    <table border="1" cellpadding="8" cellspacing="0">
+    <table id="users_table" border="1" cellpadding="8" cellspacing="0">
         <thead>
         <tr>
             <th>#</th>
@@ -36,18 +34,21 @@
         </tbody>
     </table>
     <hr/>
+
     <p>
         <input id="subject" placeholder="subject" size="30">
     </p>
     <p>
-        <textarea id="body" placeholder="mail body" cols=75 rows=5></textarea><br/>
+        <textarea id="body" placeholder="mail body" cols="75" rows="5"></textarea><br/>
     </p>
-    <p>
-        <button type="button" onclick="send()">Send</button>
-    </p>
+    <form id="emailForm" action="" enctype="multipart/form-data">
+        <input type="file" name="attachment" id="attachment"/><br/><br/>
+        <input type="submit" value="submit" onclick="send()"/>
+    </form>
     <div id="result"></div>
 </section>
-<script type="text/javascript">
+
+<!--<script type="text/javascript">
     function send() {
         $('#result').html("Sending ...");
         var users = $("input:checkbox:checked").map(function () {
@@ -61,6 +62,31 @@
                 $('#result').html(result);
             }
         });
+    }
+</script>-->
+<script type="text/javascript">
+    function send() {
+        $('#result').html("Sending ...");
+        var users = $("#users_table input:checkbox:checked").map(function () {
+            return this.value;
+        }).get();
+
+        var form = new FormData($("#emailForm")[0]);
+        form.append("users", users.toString());
+        form.append("subject", $("#subject")[0].value);
+        form.append("body", $("#body")[0].value);
+        $.ajax({
+            url: "send",
+            type: "POST",
+            dataType: 'json',
+            data: form,
+            processData: false,
+            contentType: false,
+            success: function(result){
+                $('#result').html(result);
+            }
+        });
+
     }
 </script>
 </body>

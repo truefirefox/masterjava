@@ -3,6 +3,7 @@ package ru.javaops.masterjava.service.mail;
 import lombok.extern.slf4j.Slf4j;
 import one.util.streamex.StreamEx;
 
+import javax.activation.DataHandler;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -17,11 +18,15 @@ public class MailServiceExecutor {
 
     private static final ExecutorService mailExecutor = Executors.newFixedThreadPool(8);
 
-    public static GroupResult sendBulk(final Set<Addressee> addressees, final String subject, final String body) {
+    public static GroupResult sendBulk(final Set<Addressee> addressees,
+                                       final String subject,
+                                       final String body,
+                                       final DataHandler attachment,
+                                       final String attacmentName) {
         final CompletionService<MailResult> completionService = new ExecutorCompletionService<>(mailExecutor);
 
         List<Future<MailResult>> futures = StreamEx.of(addressees)
-                .map(addressee -> completionService.submit(() -> MailSender.sendTo(addressee, subject, body)))
+                .map(addressee -> completionService.submit(() -> MailSender.sendTo(addressee, subject, body, attachment, attacmentName)))
                 .toList();
 
         return new Callable<GroupResult>() {

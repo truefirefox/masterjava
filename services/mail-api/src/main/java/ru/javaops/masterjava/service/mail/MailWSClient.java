@@ -8,7 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import ru.javaops.web.WebStateException;
 import ru.javaops.web.WsClient;
 
+import javax.activation.DataHandler;
 import javax.xml.namespace.QName;
+import javax.xml.ws.BindingProvider;
+import javax.xml.ws.soap.SOAPBinding;
 import java.util.Set;
 
 @Slf4j
@@ -24,11 +27,20 @@ public class MailWSClient {
     }
 
 
-    public static String sendToGroup(final Set<Addressee> to, final Set<Addressee> cc, final String subject, final String body) throws WebStateException {
+    public static String sendToGroup(final Set<Addressee> to,
+                                     final Set<Addressee> cc,
+                                     final String subject,
+                                     final String body,
+                                     final DataHandler attachment,
+                                     final String attacmentName) throws WebStateException {
         log.info("Send mail to '" + to + "' cc '" + cc + "' subject '" + subject + (log.isDebugEnabled() ? "\nbody=" + body : ""));
         String status;
         try {
-            status = WS_CLIENT.getPort().sendToGroup(to, cc, subject, body);
+            MailService mailService = WS_CLIENT.getPort();
+            BindingProvider bp = (BindingProvider) mailService;
+            SOAPBinding binding = (SOAPBinding) bp.getBinding();
+            binding.setMTOMEnabled(true);
+            status = WS_CLIENT.getPort().sendToGroup(to, cc, subject, body, attachment, attacmentName);
             log.info("Sent with status: " + status);
         } catch (Exception e) {
             log.error("sendToGroup failed", e);
@@ -37,11 +49,15 @@ public class MailWSClient {
         return status;
     }
 
-    public static GroupResult sendBulk(final Set<Addressee> to, final String subject, final String body) throws WebStateException {
+    public static GroupResult sendBulk(final Set<Addressee> to,
+                                       final String subject,
+                                       final String body,
+                                       final DataHandler attachment,
+                                       final String attacmentName) throws WebStateException {
         log.info("Send mail to '" + to + "' subject '" + subject + (log.isDebugEnabled() ? "\nbody=" + body : ""));
         GroupResult result;
         try {
-            result = WS_CLIENT.getPort().sendBulk(to, subject, body);
+            result = WS_CLIENT.getPort().sendBulk(to, subject, body, attachment, attacmentName);
         } catch (WebStateException e) {
             log.error("sendBulk failed", e);
             throw WsClient.getWebStateException(e);

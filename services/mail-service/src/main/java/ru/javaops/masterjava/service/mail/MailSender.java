@@ -11,6 +11,7 @@ import ru.javaops.masterjava.service.mail.persist.MailCase;
 import ru.javaops.masterjava.service.mail.persist.MailCaseDao;
 import ru.javaops.web.WebStateException;
 
+import javax.activation.DataHandler;
 import java.util.Set;
 
 /**
@@ -21,18 +22,20 @@ import java.util.Set;
 public class MailSender {
     private static final MailCaseDao MAIL_CASE_DAO = DBIProvider.getDao(MailCaseDao.class);
 
-    static MailResult sendTo(Addressee to, String subject, String body) throws WebStateException {
-        val state = sendToGroup(ImmutableSet.of(to), ImmutableSet.of(), subject, body);
+    static MailResult sendTo(Addressee to, String subject, String body, DataHandler attachment, String attacmentName) throws WebStateException {
+        val state = sendToGroup(ImmutableSet.of(to), ImmutableSet.of(), subject, body, attachment, attacmentName);
         return new MailResult(to.getEmail(), state);
     }
 
-    static String sendToGroup(Set<Addressee> to, Set<Addressee> cc, String subject, String body) throws WebStateException {
+    static String sendToGroup(Set<Addressee> to, Set<Addressee> cc, String subject, String body, DataHandler attachment, String attacmentName) throws WebStateException {
         log.info("Send mail to \'" + to + "\' cc \'" + cc + "\' subject \'" + subject + (log.isDebugEnabled() ? "\nbody=" + body : ""));
+
         String state = MailResult.OK;
         try {
             val email = MailConfig.createHtmlEmail();
             email.setSubject(subject);
             email.setHtmlMsg(body);
+            if (attachment != null) email.attach(attachment.getDataSource(), attacmentName, "attachment");
             for (Addressee addressee : to) {
                 email.addTo(addressee.getEmail(), addressee.getName());
             }
