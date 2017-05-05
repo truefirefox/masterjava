@@ -15,6 +15,10 @@ public class Configs {
         return getConfig(resource).getConfig(domain);
     }
 
+    public static Config getConfig(String resource, String domain, String child) {
+        return getConfig(resource).getConfig(domain).getConfig(child);
+    }
+
     public static File getConfigFile(String path) {
         return new File(AppConfig.APP_CONFIG.getString("configDir"), path);
     }

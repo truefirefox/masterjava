@@ -7,6 +7,7 @@ import com.sun.xml.ws.api.message.Message;
 import com.sun.xml.ws.api.streaming.XMLStreamWriterFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.event.Level;
+import ru.javaops.web.Statistics;
 
 import javax.xml.stream.XMLStreamWriter;
 import java.io.ByteArrayOutputStream;
@@ -79,6 +80,7 @@ public abstract class SoapLoggingHandler extends SoapBaseHandler {
         DEBUG {
             public void handleFault(MessageHandlerContext context) {
                 log.error("Fault SOAP message:\n" + getMessageText(context.getMessage().copy()));
+
             }
 
             public void handleMessage(MessageHandlerContext context, boolean isRequest) {
@@ -109,12 +111,22 @@ public abstract class SoapLoggingHandler extends SoapBaseHandler {
     @Override
     public boolean handleMessage(MessageHandlerContext mhc) {
         HANDLER_MAP.get(loggingLevel).handleMessage(mhc, isRequest(isOutbound(mhc)));
+        if (!isRequest(isOutbound(mhc))) {
+
+           /* Object responseCode = mhc.get(MessageHandlerContext.HTTP_RESPONSE_CODE);
+            String code = responseCode == null? null : responseCode.toString();
+            if ("0".equals(code))*/
+
+           // log twice without checking code
+                Statistics.count(mhc.getMessage().getPayloadLocalPart(), System.currentTimeMillis(), Statistics.RESULT.SUCCESS);
+        }
         return true;
     }
 
     @Override
     public boolean handleFault(MessageHandlerContext mhc) {
         HANDLER_MAP.get(loggingLevel).handleFault(mhc);
+        Statistics.count(mhc.getMessage().getPayloadLocalPart(), System.currentTimeMillis(), Statistics.RESULT.FAIL);
         return true;
     }
 }
