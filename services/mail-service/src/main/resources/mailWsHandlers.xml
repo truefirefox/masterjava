@@ -8,7 +8,7 @@
 
     <handler>
         <handler-name>SoapServerSecurityHandler</handler-name>
-        <handler-class>ru.javaops.web.handler.SoapServerSecurityHandler</handler-class>
+        <handler-class>ru.javaops.masterjava.service.mail.handler.SoapServerSecurityHandler</handler-class>
     </handler>
 
 </handler-chain>

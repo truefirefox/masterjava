@@ -1,8 +1,7 @@
 package ru.javaops.web;
 
-import com.typesafe.config.Config;
 import ru.javaops.masterjava.ExceptionType;
-import ru.javaops.masterjava.config.Configs;
+import ru.javaops.web.handler.SoapClientLoggingHandler;
 
 import javax.xml.namespace.QName;
 import javax.xml.ws.Binding;
@@ -14,24 +13,20 @@ import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
-public class WsClient<T> {
-    public static Config HOSTS;
+import static ru.javaops.web.HostConfig.HOST;
 
+public class WsClient<T> {
     private final Class<T> serviceClass;
     private final Service service;
     private String endpointAddress;
-
-    static {
-        HOSTS = Configs.getConfig("hosts.conf", "hosts", "mail");
-    }
 
     public WsClient(URL wsdlUrl, QName qname, Class<T> serviceClass) {
         this.serviceClass = serviceClass;
         this.service = Service.create(wsdlUrl, qname);
     }
 
-    public void init(String host, String endpointAddress) {
-        this.endpointAddress = HOSTS.getString(host) + endpointAddress;
+    public void init(String endpointAddress) {
+        this.endpointAddress = HOST.getEndpoint() + endpointAddress;
     }
 
     //  Post is not thread-safe (http://stackoverflow.com/a/10601916/548473)
@@ -43,16 +38,16 @@ public class WsClient<T> {
         return port;
     }
 
-    public static <T> void setAuth(T port, String user, String password) {
+    public static <T> void setAuth(T port) {
         Map<String, Object> requestContext = ((BindingProvider) port).getRequestContext();
-        requestContext.put(BindingProvider.USERNAME_PROPERTY, user);
-        requestContext.put(BindingProvider.PASSWORD_PROPERTY, password);
+        requestContext.put(BindingProvider.USERNAME_PROPERTY, HOST.getUser());
+        requestContext.put(BindingProvider.PASSWORD_PROPERTY, HOST.getPassword());
     }
 
-    public static <T> void setHandler(T port, Handler handler) {
+    public static <T> void setHandler(T port) {
         Binding binding = ((BindingProvider) port).getBinding();
         List<Handler> handlerList = binding.getHandlerChain();
-        handlerList.add(handler);
+        handlerList.add(new SoapClientLoggingHandler(HOST.getDebugLevel()));
         binding.setHandlerChain(handlerList);
     }
 

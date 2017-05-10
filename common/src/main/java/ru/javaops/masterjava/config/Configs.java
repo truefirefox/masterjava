@@ -11,12 +11,12 @@ public class Configs {
         return ConfigFactory.parseResources(resource).resolve();
     }
 
-    public static Config getConfig(String resource, String domain) {
-        return getConfig(resource).getConfig(domain);
-    }
-
-    public static Config getConfig(String resource, String domain, String child) {
-        return getConfig(resource).getConfig(domain).getConfig(child);
+    public static Config getConfig(String resource, String... domains ) {
+        Config config = getConfig(resource);
+        for (String domain: domains) {
+            config = config.getConfig(domain);
+        }
+        return config;
     }
 
     public static File getConfigFile(String path) {

@@ -5,10 +5,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.event.Level;
 import ru.javaops.web.WebStateException;
 import ru.javaops.web.WsClient;
-import ru.javaops.web.handler.SoapClientLoggingHandler;
 
 import javax.xml.namespace.QName;
 import javax.xml.ws.soap.MTOMFeature;
@@ -18,21 +16,14 @@ import java.util.Set;
 @Slf4j
 public class MailWSClient {
     private static final WsClient<MailService> WS_CLIENT;
-    public static final String USER;
-    public static final String PASSWORD;
-    private static final SoapClientLoggingHandler LOGGING_HANDLER;
 
     static {
         WS_CLIENT = new WsClient<MailService>(Resources.getResource("wsdl/mailService.wsdl"),
                 new QName("http://mail.javaops.ru/", "MailServiceImplService"),
                 MailService.class);
 
-        WS_CLIENT.init("endpoint", "/mail/mailService?wsdl");
-        USER = WsClient.HOSTS.getString("user");
-        PASSWORD = WsClient.HOSTS.getString("password");
-        LOGGING_HANDLER = new SoapClientLoggingHandler(Level.valueOf(WsClient.HOSTS.getString("debug.client")));
+        WS_CLIENT.init("/mail/mailService?wsdl");
     }
-
 
     public static String sendToGroup(final Set<Addressee> to, final Set<Addressee> cc, final String subject, final String body, List<Attach> attaches) throws WebStateException {
         log.info("Send mail to '" + to + "' cc '" + cc + "' subject '" + subject + (log.isDebugEnabled() ? "\nbody=" + body : ""));
@@ -62,8 +53,8 @@ public class MailWSClient {
 
     private static MailService getPort() {
         MailService port = WS_CLIENT.getPort(new MTOMFeature(1024));
-        WsClient.setAuth(port, USER, PASSWORD);
-        WsClient.setHandler(port, LOGGING_HANDLER);
+        WsClient.setAuth(port);
+        WsClient.setHandler(port);
         return port;
     }
 
