@@ -1,6 +1,7 @@
 package ru.javaops.masterjava.service.mail.jms;
 
 import lombok.extern.slf4j.Slf4j;
+import ru.javaops.masterjava.service.mail.MailData;
 
 import javax.jms.*;
 import javax.naming.InitialContext;
@@ -30,11 +31,11 @@ public class JmsListener implements ServletContextListener {
                 try {
                     while (!Thread.interrupted()) {
                         Message m = receiver.receive();
-                        // TODO implement mail sending
-                        if (m instanceof TextMessage) {
-                            TextMessage tm = (TextMessage) m;
-                            String text = tm.getText();
-                            log.info(String.format("Received TextMessage with text '%s'.", text));
+                        if (m instanceof ObjectMessage) {
+                            ObjectMessage om = (ObjectMessage) m;
+                            MailData mailData = (MailData) om.getObject();
+                            log.info(String.format("Received TextMessage with text '%s' for recipients %s.",
+                                    mailData.getBody(), mailData.getUsersTo().toString()));
                         }
                     }
                 } catch (Exception e) {

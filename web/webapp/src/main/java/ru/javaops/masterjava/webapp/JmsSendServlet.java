@@ -1,6 +1,9 @@
 package ru.javaops.masterjava.webapp;
 
 import lombok.extern.slf4j.Slf4j;
+import ru.javaops.masterjava.service.mail.Addressee;
+import ru.javaops.masterjava.service.mail.MailData;
+import ru.javaops.masterjava.service.mail.MailWSClient;
 
 import javax.jms.*;
 import javax.naming.InitialContext;
@@ -12,6 +15,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.IllegalStateException;
+import java.util.HashSet;
 
 @WebServlet("/sendJms")
 @Slf4j
@@ -57,9 +61,12 @@ public class JmsSendServlet extends HttpServlet {
     private synchronized String sendJms(String users, String subject, String body) {
         String msg;
         try {
-            TextMessage testMessage = session.createTextMessage();
-            testMessage.setText(subject);
-            producer.send(testMessage);
+            HashSet<Addressee> usersTo = new HashSet<>(MailWSClient.split(users));
+            MailData mailData = new MailData(usersTo, subject, body);
+            ObjectMessage om = session.createObjectMessage();
+            om.setObject(mailData);
+            //om.setObject(new String("abc"));
+            producer.send(om);
             msg = "Successfully sent message.";
             log.info(msg);
         } catch (Exception e) {

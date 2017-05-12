@@ -52,7 +52,9 @@
               factory="org.apache.activemq.jndi.JNDIReferenceFactory"
               brokerURL="failover:(vm://localhost)"
               brokerName="LocalActiveMQBroker"
-              useEmbeddedBroker="true"/>
+              useEmbeddedBroker="true"
+              trustAllPackages="true"
+    />
 
     <Resource name="jms/queue/MailQueue"
               auth="Container"
