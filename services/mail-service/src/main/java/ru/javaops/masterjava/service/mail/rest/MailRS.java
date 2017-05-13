@@ -14,8 +14,9 @@ import ru.javaops.web.WebStateException;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Path("/")
@@ -37,17 +38,16 @@ public class MailRS {
                             @FormDataParam("attach") InputStream uploadedInputStream,
                             @FormDataParam("attach") FormDataContentDisposition fileDetail) throws WebStateException {
 
-        List<Attach> attaches;
-        if (uploadedInputStream == null) {
+        List<Attach> attaches = new ArrayList<>();
+        if (fileDetail.getFileName().isEmpty()) {
             attaches = ImmutableList.of();
         } else {
-            String name = fileDetail.getFileName();
             try {
-                name = new String(fileDetail.getFileName().getBytes ("iso-8859-1"), "UTF-8");
-            } catch (UnsupportedEncodingException e) {
+                String name = new String(fileDetail.getFileName().getBytes ("iso-8859-1"), "UTF-8");
+                attaches = ImmutableList.of(Attachments.getAttach(name, uploadedInputStream));
+            } catch (IOException e) {
                 e.printStackTrace();
             }
-            attaches = ImmutableList.of(Attachments.getAttach(name, uploadedInputStream));
         }
         return MailServiceExecutor.sendBulk(MailWSClient.split(users), subject, body, attaches);
     }
