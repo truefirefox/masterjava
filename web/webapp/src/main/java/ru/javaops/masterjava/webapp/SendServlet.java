@@ -31,7 +31,7 @@ public class SendServlet extends HttpServlet {
         String body = req.getParameter("body");
         List<Attach> attaches;
         Part filePart = req.getPart("attach");
-        if (filePart == null) {
+        if (filePart.getSize() == 0) {
             attaches = ImmutableList.of();
         } else {
             attaches = ImmutableList.of(Attachments.getAttach(filePart.getSubmittedFileName(), filePart.getInputStream()));
