@@ -1,24 +1,27 @@
 package ru.javaops.masterjava.webapp;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
-import ru.javaops.masterjava.service.mail.Addressee;
 import ru.javaops.masterjava.service.mail.MailData;
-import ru.javaops.masterjava.service.mail.MailWSClient;
 
 import javax.jms.*;
 import javax.naming.InitialContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
 import java.io.IOException;
 import java.lang.IllegalStateException;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 
 @WebServlet("/sendJms")
 @Slf4j
+@MultipartConfig
 public class JmsSendServlet extends HttpServlet {
     private Connection connection;
     private Session session;
@@ -55,17 +58,27 @@ public class JmsSendServlet extends HttpServlet {
         String users = req.getParameter("users");
         String subject = req.getParameter("subject");
         String body = req.getParameter("body");
-        resp.getWriter().write(sendJms(users, subject, body));
+
+        Map<String, byte []> attaches;
+        Part filePart = req.getPart("attach");
+        if (filePart.getSize() == 0) {
+            attaches = ImmutableMap.of();
+        } else {
+            byte[] toAttach = new byte[filePart.getInputStream().available()];
+            filePart.getInputStream().read(toAttach);
+            attaches = ImmutableMap.of(filePart.getSubmittedFileName(), toAttach);
+
+        }
+        resp.getWriter().write(sendJms(users, subject, body, attaches));
     }
 
-    private synchronized String sendJms(String users, String subject, String body) {
+    private synchronized String sendJms(String users, String subject, String body, Map<String, byte[]> attaches) {
         String msg;
         try {
-            HashSet<Addressee> usersTo = new HashSet<>(MailWSClient.split(users));
-            MailData mailData = new MailData(usersTo, subject, body);
+            HashMap<String, byte[]> attachMap = new HashMap<>(attaches);
+            MailData mailData = new MailData(users, subject, body, attachMap);
             ObjectMessage om = session.createObjectMessage();
             om.setObject(mailData);
-            //om.setObject(new String("abc"));
             producer.send(om);
             msg = "Successfully sent message.";
             log.info(msg);
